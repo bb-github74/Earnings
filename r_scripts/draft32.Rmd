@@ -1,0 +1,320 @@
+---
+title: "FINAL DRAFT"
+author: "bbaasan"
+date: "2023-11-7"
+output: 
+  pdf_document:
+    number_sections: true 
+    
+header-includes: 
+  - \usepackage{pdflscape}  
+  
+bibliography: "../bibliography/references3.bib"
+csl: "ieee.csl"
+#classoption: twocolumn
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Abstract  
+
+Natural language processing (NLP) holds promise for forecasting stock market trends for companies. However, its application may inadvertently introduce noise, potentially hampering the generalization capabilities. Addressing this issue, our study enriches the field by presenting the Hybrid Market Movement (HMM) predictor model. This innovative model melds technical analysis with topic modeling and sentiment analysis extracted from earnings call transcripts. It has shown robust performance, evidenced by F1-scores exceeding 80 percent on both training and testing datasets, and surpassing 80 percent on novel data. Further, the study explores the interplay and impact of various features within the model by employing Random Forest for feature importance evaluation and permutation testing.   
+
+
+# Introduction  
+
+In the intricate realm of financial markets, the pursuit of informed decisions is paramount. This research embarks on an all-encompassing journey blending corporate communication, sentiment analysis, topic exploration, and technical indicators to elucidate the connections between information, market sentiment, and price shifts similar to [@medya2022exploratory], [@grafe2011topic], [@ZhangChuancai2021ECCa], [@HuangAllenH2018AIDa], [@PramanikParitosh2022Irto], [@jayaraman2020can], [@liu2019predicting], [@BrennanMaureen2021PSPU]. Central to our investigation are earnings calls—frequently overlooked yet brimming with insightful revelations. Originating from corporate boardrooms, these texts furnish a unique vantage into a company's emotional state, strategies, and market significance.   
+
+Our foremost objective is discerning the correlations between earnings calls, market sentiment, and ensuing price alterations. Earnings calls are recorded conference calls wherein public companies' managements declare and deliberate on quarterly or annual financial results[@CFITeamEarningsCall2022]. These calls serve multiple purposes: guiding price recommendations for investors[@keith2019modeling], influencing stock price shifts[@liu2019predicting], interpreting signals relayed during earnings announcements, and more. In instances, investors assign higher value to novel information in analyst reports when managers might withhold critical data[@HuangAllenH2018AIDa]. By meticulously analyzing data, we hoped to strive if positive or negative sentiments in these earning calls, coupled with particular themes, associates with stock price shifts. We are confident that exposing these ties can bestow invaluable predictive instruments upon market players.  
+
+Fundamentally, earnings calls can sway stock prices through sentiment. While financial metrics proffer a historical perspective, the qualitative nuances voiced during the call grant context and indicators of potential future performance. For instance, despite a company announcing favorable outcomes, a somber tone or bleak future projections can precipitate a decline in stock price[@liu2019predicting]. Infusing sentiment derived from earnings calls into our model introduces an extra dimension of qualitative analysis that is similar to [@jayaraman2020can]. Earnings calls are momentous events for publicly traded firms, serving as platforms where executives discuss their financial outcomes, operational advancements, and prospective forecasts. Employing natural language processing (NLP) in text mining aids stakeholders and investors in gleaning information from unstructured data, like earnings calls, to anticipate stock behavior. Generally, scholars leverage publicly accessible data in numerical formats using methodologies like TF-IDF, Word2Vec, Doc2Vec, and feed them into algorithms such as Random Forest and Recursive Neural Network (RNN).  
+
+NLP facilitates tasks like sentiment analysis, crucial in predicting post-call modifications in price targets[@keith2019modeling]. Sentiment analysis discerns the emotional undertone of a text fragment, gauging the author's stance toward a topic. Some academic works suggest that the analytical prowess of transcripts exceeds human interpretation of earnings indicators[@liu2019predicting]. Furthermore, NLP encompasses features for sentiment analysis vital for anticipating post-call price target shifts. Sentiment analysis, or opinion mining, employs automated tools to detect subjectivity—opinions, attitudes, or feelings—in text[@lin2009joint]. In certain scenarios, sentiments in earnings calls can assist analysts in predicting stock price trajectories with accuracies ranging from 50+%[@DanielKennettOnline] to a staggering 73%[@jayaraman2020can].  
+
+While we recognize the importance of backtesting when evaluating predictive models, it's essential to clarify that our main focus isn't on crafting trading strategies. We understand that earnings call transcripts represent a form of unstructured data, making them susceptible to noise and overfitting. Our goal is to deepen the existing knowledge base, highlighting the intricate ties between corporate communication, sentiment, and market trends. To address these challenges, we're introducing the Hybrid Market Movement (HMM) predictor model. This model utilizes topic modeling to reduce issues stemming from high dimensionality and marries it with technical indicators, such as daily closing prices, daily moving averages, and market sentiments. In this paper, we aim to delve deeper into the transcripts by comparing features like topics discussed and sentiments expressed during earnings calls with price movements. Key questions we'll explore include: Why do earnings call transcripts show significant correlations with stock price movements, and what are the limitations of natural language processing as an analytical instrument.
+
+Subsequent sections will delve into our literature review, research methodologies, data reservoirs, empirical discoveries and discussion and conclusion. 
+
+
+# Literature Review  
+
+A significant body of work has centered on predicting stock market trends using natural language processing (NLP). This interest might be attributed to the observation that stock price movements around earnings announcement events exhibit certain predictable characteristics [@liu2019predicting]. These characteristics can bolster an analyst's accuracy in forecasting future events [@NoceLucia2014APoF], assist in trend analysis [@BrennanMaureen2021PSPU], and extend the economic implications beyond the predictive capacities of quantitative firm data. Furthermore, employing NLP in conjunction with machine learning techniques offer a promising avenue, as this approach outperforms many traditional methods found in literature reviews [@NoceLucia2014APoF]. Notably, it can accurately categorize forward-looking statements without necessitating user interaction or extensive tuning.  
+
+[@BrennanMaureen2021PSPU] analyzed transcripts from five years' worth of quarterly earnings calls from 10 NASDAQ-listed public companies. Their research contrasted five different text-based predictive analysis methodologies across two forecasting horizons. Stock performance was gauged by comparing each company's stock price trajectory to the NASDAQ index over an identical period. The research also highlighted a novel sentiment feature extraction technique using the Word2Vec's most_similar function, aiming to derive a list of words potent enough to provide industry-specific insights.  
+
+In their study, [@keith2019modeling] delved into analysts' decision-making processes regarding the linguistic content of earnings calls. They identified 20 pragmatic attributes within analysts' inquiries and drew correlations with analysts' pre-call investor recommendations. The intention was to ascertain the extent to which semantic and pragmatic elements from an earnings call complement market data in forecasting any post-call modifications to analysts' price targets. Their findings suggested that while earnings calls had a moderate impact on analysts' decision-making, these decisions were concurrently influenced by other factors, such as confidential discussions with company executives and the overall market environment.  
+
+Lastly, [@jayaraman2020can] found that the sentiment derived from earnings calls could predict stock price movements with a commendable accuracy of 73%. The forecasting strength of earnings call sentiment paralleled that of earnings-per-share (EPS) and revenue surprise metrics, both of which are utilized as stand-ins for earnings call content. By employing a range of methodologies, including OLS regression, the research confirmed the formidable predictive prowess of earnings call sentiment, particularly in gauging stock price fluctuations following an earnings announcement.   
+  
+
+## Topics Modeling      
+
+In addition to sentiment analysis, earnings call transcripts may conceal latent information, commonly referred to as 'topic modeling'. Topic modeling is a type of statistical modeling that aims to discover the hidden topics or themes within a collection of documents or text data. It is a dynamic belief model representing text document collections via a corpus or bag-of-words. As [@newman2010automatic] notes, a topic model envisions each document in a collection as a multinomial distribution over topics, with each topic being a multinomial distribution of words. Commonly used in NLP applications, these models (LDA and Latent Semantic Analysis or LSA) assist in word sense disambiguation, text classification, and information retrieval. They offer a method to systematically gauge word similarity, benefiting tasks like document classification or clustering based on word similarity.This form of statistical modeling classifies text within a document to specific topics. The utility of topic modeling as a review technique helps identify and compare machine learning (ML) research trends across business organization verticals [@PramanikParitosh2022Irto, @dumont2017sentiment]. This unsupervised ML method scrutinizes a series of documents to discern patterns of words and phrases, thereby automatically clustering these word groups.
+
+Historically, topic modeling has been a mainstay in computational linguistics, employed to determine sets of words (or "topics") that encapsulate the hidden semantics of a document or a collection of them [@newman2010automatic]. It's also been used as a review technique to recognize and contrast ML research trends [@PramanikParitosh2022Irto], analyze risk factors in the 10-K financial statement's Section 1A [@ZhangChuancai2021ECCa], quantify the coherence of document sets [@roder2015exploring], gauge semantic meaning in inferred topics [@chang2009reading], refine or partition models [@GuoChonghui2021AILT], and for longitudinal analyses [@AzizSaqib2022Mlif].  
+
+[@HuangAllenH2018AIDa] leveraged topic modeling, a methodology rooted in computational linguistics, to contrast the thematic content of a vast sample of analyst reports with the content of corresponding earnings conference calls. Their findings underscored that analysts frequently broach unique topics not covered in the conference calls and offer interpretations on call content. They also revealed that investors place heightened importance on novel information in analyst reports when corporate managers are more inclined to withhold significant information. Particularly, analyst interpretations become invaluable when the costs associated with processing conference call information rise. Their research underlines the pivotal role of analysts as information intermediaries who unearth insights beyond standard corporate disclosures while also clarifying and authenticating them.  
+
+In his research, @GuoChonghui2021AILT segmented documents into distinct semantic topic units. His enhanced Latent Dirichlet Allocation (LDA) topic model, based on partitioning (LDAP), is optimized for medium to lengthy texts. The LDAP not only retains the advantages of the original LDA but also improves the granularity from the document to the semantic topic level. Comprehensive tests on the Fudan University and Sougou Lab corpora revealed that LDAP outperformed other topic models like LDA, HDP, LSA, and doc2vec.
+
+@ZhangChuancai2021ECCa's study centered on linguistic changes in financial reports that might predict firms' future returns and operations. By contrasting language in the Question-and-Answer and Presentation sessions of earnings conference calls, he identified tendencies for "lazy prices" — prices that react slowly to information changes. This research bifurcated the dataset to compare language use in different sections, asserting that methods like topic overlap and comparison language channels could diminish the predictive power of textual changes for future returns.  
+
+Introduced by Wu and Palmer in 1994, the Wu-Palmer Similarity (WPS) is a metric for computing the semantic similarity between words by examining the depth of their closest shared ancestor within a taxonomy [@wu1994verb]. Unlike other metrics that may emphasize semantic relatedness or the shortest path between concepts [@leacock1998using; @hirst1998lexical], WPS gives precedence to word pairs that are closely connected within the hierarchical structure. Complementing this, the Resnik Information Content (IC) approach, proposed by Philip Resnik in 1995, offers another angle by measuring semantic similarity. Resnik's method quantifies the likeness of two words based on the information content shared by their most informative common ancestor (MICA) within a taxonomy or ontology [@resnik1995using]. These methodologies provide nuanced insights into the semantic connections between terms, each from a distinct perspective that highlights different aspects of word similarity.  
+
+@lin2009joint pioneered a distinct measure of semantic similarity rooted in information entropy. This approach computes the similarity between two words through the harmonic mean of their Information Content (IC) values within a taxonomy or ontology like WordNet. It allocates a higher similarity score to word pairs with a higher-IC MICA and a lesser score to those with a lower-IC MICA. Through this, [@lin1998automatic] expanded the information theoretic approach in NLP, resulting in a more nuanced similarity measurement between words.  
+
+@jiang1997semantic introduced Jiang-Conrath Similarity (JCN), introduced in 1997. The model estimates the similarity between two words considering the difference in their IC values and the IC of their Least Common Subsumer (LCS) within a taxonomy or ontology. This similarity is defined as 1 / (1 + d), with 'd' being the IC difference between the words and their LCS. This measure attributes a higher similarity score to word pairs with smaller IC differences and a lower score to those with larger differences. [@torres2009comparing] did similar work where it revealed that the accuracy of similarity measures with varying back-off strategies ranges from 45 to 60 percent across three corpora. However, within the Semeval dataset, accuracy lingers between 35 and 37 percent, possibly due to the inclusion of only nouns and verbs and the restriction that sentences contain a maximum of 16 words.   
+
+Introduced by Michael Lesk in 1986, the Lesk algorithm is a word sense disambiguation (WSD) methodology [@lesk1986automatic]. It postulates that the most probable sense of a word in a context is the one with the most overlap with surrounding words. The Lesk algorithm operates by juxtaposing the definition of each sense of a word with the words in its context, selecting the sense with the maximum overlap as the likeliest.  
+
+@schutze1998automatic proposed a distributional semantics model in 1998. This NLP branch delves into word meanings in context. The foundational idea is that words in similar contexts often bear similar meanings. In his model, words are represented as high-dimensional vectors, each dimension corresponding to a context feature, like neighboring words. The seminal contribution from [@schutze1998automatic] lies in this model's ability to encapsulate word meanings based on their distribution in vast text corpora.  
+  
+
+## Techincal Indicators  
+
+We recognize the nuanced interplay between textual data and market dynamics. To piece this puzzle together, we immerse ourselves in technical analysis, emphasizing historical prices, trading volumes, and technical indicators consistent with [@XueJia2020Pdas], [@roozen2021stock], [@cdi10_34894_TJE0D0], [@BrennanMaureen2021PSPU], [@dumont2017sentiment], [@jayaraman2020can], [@lin2009joint],[@AzizSaqib2022Mlif]. Fusing quantitative metrics with qualitative insights, we forge an exhaustive system for forecasting price fluctuations.  
+
+Technical analysis revolves around the study of historical price patterns and trading volumes in financial markets to forecast future price movements. Unlike fundamental analysis, which examines the intrinsic value of securities, technical analysis is solely anchored on historical trading data [@lo2000foundations]. The primary objective of technical analysis is to recognize patterns or consistencies in stock price data. These patterns could manifest as specific formations (e.g., "head and shoulders" or "double bottom"), trends (whether upward, downward, or lateral), or other recurrent dynamics [@edwards2018technical]. Discerning these patterns equips traders and analysts with insights for predicting potential future price fluctuations [@lo2000foundations].  
+
+Stock price movements often exhibit nonlinear trajectories that can elude conventional linear models. However, nonparametric techniques, like kernel regression, can adept at pinpointing these patterns. They weigh observations based on closeness, eschewing strict data assumptions, and are capable of elucidating intricate nonlinear relationships even in data laden with noise [@lo2000foundations]. Although this doesn't imply that technical analysis can consistently yield above-average trading profits, it does suggest the potential value it could bring to the investment process [@lo2000foundations].   
+
+Among various indicators, the Daily Moving Average (DMA) stands out. It's often seen as a low-risk gauge for transactions since it mirrors the average price traders have paid over a specific duration. For instance, a 50-day moving average encapsulates the average price traders paid for an asset over the last 10 trading weeks, making it a widely acknowledged support level [@caseymurphy_50_100_200sma]. On the other hand, the 200-day moving average reflects the average price across the previous 40 weeks, hinting at a relatively affordable price when juxtaposed with the range prevalent for the majority of the past year. If prices dip below this average, it could serve as resistance since those who've ventured into the market might contemplate exiting to prevent substantial losses [@caseymurphy_50_100_200sma]. Additionally, moving averages help filter out price chart noise. The orientation of the moving average provides a rudimentary sense of price direction—angled upward signifies a rise, downward indicates a decline, and sideways suggests a range [@CoreyMitchell_howtobuy2022].
+
+Addionally, moving averages can also double up as support or resistance levels. In a bullish phase, metrics like the 50-day or 200-day moving averages can offer support, analogous to a floor from which prices can rebound. Conversely, during a bearish phase, these averages might act as resistance, akin to a ceiling which prices touch before receding [@caseymurphy_50_100_200sma], [@CoreyMitchell_howtobuy2022], [@lo2000foundations], [@park2004profitability].  
+
+
+# Methodology  
+
+This innovative approach to predicting stock price movement is an extension inspired by the works of @DanielKennettOnline and @jayaraman2020can. By crafting an ensemble model that deftly combines LDA topic modeling [@rehurek_lrec2010], sentiment analysis [@hutto2014vader], [@loughran2011liability], and technical indicators [@tsai2018impact], we are taking a page from their playbook and pushing the boundaries in financial analytics. Their foundational principles serve as a bedrock upon which this comprehensive method stands, allowing for a richer and more nuanced understanding of stock market dynamics. Such a fusion not only pays homage to their contributions but also charts a new path forward in the realm of stock prediction.
+
+**Data Source**
+
+*Earnings Call*  
+Text data can be sourced to number of ways: Harvard Business School^[https://asklib.library.hbs.edu/faq/47473] suggests Bloomberg, Factiva, Standard and Poor's Capital IQ. It is also available at Motley^[https://www.fool.com/earnings-call-transcripts/]. The paper used [**Seeking Alpha**](https://seekingalpha.com), a crowd-sourced content service that publishes news on financial sectors. Earning Calls transcripts for this research are scraped from the website, using python libraries including [BeautifulShop4](https://pypi.org/project/bs4/), [requests](https://pypi.org/project/requests/), and [Pandas](https://pypi.org/search/?q=pandas). Codes can be available in [Github repository](https://github.com/mongoliaonfact/Earnings/tree/main/py_scripts) except those codes used for web scrapping.  
+
+*Stock Market Data*  
+Close and Volume data: Historical closing price and volume data can be downloaded using **yfinance** [\textcolor{blue}{a python library}](https://pypi.org/project/yfinance/), which offers a reliable method of downloading historical market data from Yahoo! Finance API. It is maintained by [@ranaroussiyfinance]. It is open source and free and provides high granularity of data with intervals of "1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo". 
+
+*Ticker information*  
+The data encompasses 6,126 tickers^[Top 2200+ companies and their information are available [\textcolor{blue}{here}](https://bbaasan.online/top2400.html)], which consist of those listed on National Association of Securities Dealers Automated Quotations Stock Market (NASDAQ) and New York Stock Exchange (NYSE) other symbols. Information regarding NASDAQ listings can be found on their website^[https://www.nasdaq.com/market-activity/stocks/screener]. Data for NYSE and other listings can be accessed here^[https://datahub.io/core/nyse-other-listings#resource-nyse-other-listings_zip].
+
+**Data Size**:  
+The data separated into two sets where the main (see Table 1) is used for modeling (136522 documents out of 189000+) which gathered on 2023-06-08. And other (see Table 2) used as a unseen data set for the model evaluation which consists of (3942 documents out of 4000) gathered on 2023-09-19.   
+
+**Data Period**:   
+Time period of the earning calls in the main data set spans between 2011-03-31 and 2023-06-08, while unseen data set covers period of 2023-07-28 and 2023-09-19.   
+
+```{r, aggregate_period1, fig.align="center", echo=FALSE, out.width="70%", fig.cap="Main dataset: Top 10 Companies with the most Earnings calls."}
+knitr::include_graphics("../docs/results/assets/aggregate_head.png")
+```  
+
+```{r, aggregate_period2, echo=FALSE,out.width="70%", fig.align="center", fig.cap="Unseen dataset: Top 5 companies with the most Earning calls"}
+knitr::include_graphics("../docs/results/assets/unseen_top5.png")
+```  
+
+\newpage   
+- A Screenshot of the Earning Call   
+
+```{r, earning, echo=FALSE,out.width="50%", fig.align="center", fig.cap="An Example of Earnings Call: First line inlcudes company name, stock exchange where listed, company ticker, date and time when the earning call is recorded. Starting the third line company representatives with name and title, followed by participants in the call. Earning Call usually comprises from sections Presentation and Questions and Answer, where company representatives discuss summary of the financial performance for the period and answers questions. In some cases, it contains only Presentation part."}
+knitr::include_graphics("../docs/images/aapl_example.png")
+```  
+
+\newpage   
+**Features and their type**
+
+1. Closing Price (float): The closing price of the stock on a given day. It refers to the last price at which a stock trades during a regular trading session.  
+2. Volume (integer) is the amount of an asset or security that changes hands over some period of time, often over the course of trading day. 
+3. 50-Day Moving Average of Price (float): A moving average of the stock's closing price over the last 50 days.   
+4. 200-Day Moving Average of Price (float): A moving average of the stock's closing price over the last 200 days.   
+5. 50-Day Moving Average in Volume (float): A moving average of the stock's volume over the last 50 days.   
+6. 200-Day Moving Average in Volume (float): A moving average of the stock's volume over the last 200 days.  
+7. 7-16 Topics 1-10 (float): These are derived features from earnings call transcripts using the Gensim topic modeling algorithm [@rehurek_lrec2010] available in the Python library. It is one a few popular tools for topic modeling and is widely used for implementing techniques like LDA. Topics represent themes or subjects found within the text data, and an adequate selection of model parameters is crucial [@MaierDaniel2018ALTM]. The proper number of topics in a topic model can be evaluated based on coherence and perplexity scores. By examining both metrics, one can more effectively determine the appropriate number of topics for the model (see Appendix E: coherence and perplexity scores). 
+
+8. 17-19 Loughran-McDonald Sentiment (integer): Sentiment scores calculated using the Loughran-McDonald financial sentiment word lists developed by Tim Loughran and Bill McDonald of Notre Dame in 2011. It is a dictionary which tailored for financial text analysis. It is one of the most popular financial lexicon available [@kantos2022comparative]. Lexicon, often called the “bag of words” approach to NLP use a dictionary of words or phrases that are labelled with sentiment. The motivation for the LM dictionary was that in testing the popular and widely used Harvard Dictionary, negative sentiment was regularly mislabeled for words when applied in the financial context. The LM dictionary was built from a large sample of 10 Q’s and 10 K’s from the years 1994 to 2008. The sentiment was trained on approximately 5,000 words from these documents and over 80,000 words from the Harvard Dictionary [@kantos2022comparative].    
+9. 20-22. VADER Sentiment (float): Sentiment scores calculated using the VADER sentiment analysis tool, which measures sentiment (positive, negative, neutral) in text data. The work is credited to [@hutto2014vader] and its python library^[https://pypi.org/project/vaderSentiment/] is available at the footnote. It a lexicon and rule-based sentiment analysis tool that is specifically attuned to sentiments expressed in social media[@hutto2014vader].  
+10. Label:  it is binary label where value takes either 1 or 0, which is consistent with [@tsai2018impact], [@medya2022exploratory]. The label is based on the "Golden Cross" and "Death Cross" conditions in stock trading [@tsai2018impact], specifically the crossover of the 50-day and 200-day moving averages. In this context:  
+    - 1 indicates a "Golden Cross" where the short-term moving average (DMA50) crosses **\textcolor{blue}{above}** the long-term moving average (DMA200). This is often seen as a bullish signal.  
+    - 0 indicates a "Death Cross" where the short-term moving average (DMA50) drops **\textcolor{blue}{below}** the long-term moving average (DMA200). This is often  seen as a bearish signal.  
+
+\newpage  
+**Procecess Flow**  
+```{r overviewFlowChart, fig.align="center",out.width="75%", fig.cap="Overview Flow Chart"}
+
+knitr::include_graphics('../docs/images/Documents2FeaturesFlowChart.png')
+```  
+
+
+In the structure, the paper presents an ambitious endeavor to forecast stock price movements. This forecasting hinges on an amalgamation of several factors: technical indicators closing price and moving averages, the themes broached during earnings calls, and market sentiment as deciphered from the earning calls.
+
+To bring this vision to fruition, the paper employs a plethora of sophisticated machine learning techniques. This diverse range includes the Random Forest[@breiman2001random], Logistic Regression, Gaussian Naive Bayes, and Gradient Boosting. Additionally, it explores the potential of the Multi-Layer Perceptron, the Support Vector Machine (SVM), and Neural Network architectures. By deploying such a vast array of algorithms, the research seeks to construct a robust classification model that can effectively gauge the nuances of stock market movements.  
+
+
+# Results    
+
+*Topics Modeling*  
+
+Using the topic modeling tool from Gensim, we've been able to sort out the main themes from a collection of earnings call transcripts. We looked at the data from 2011 to 2023, including some new data from July to September 2023, to see which words pop up most in Topic 1. For instance, the word "market" is a key part of Topic 1, showing up more often than most other words. This tells us that "market" is pretty important when we're trying to understand what Topic 1 is all about. By figuring out which words are used most in these discussions, we can get a better idea of what companies are focusing on during these years.    
+
+
+
+Training and Testing Data^[(see Appendix B for full top 10 topics Or [\textcolor{red}{visit here}](https://bbaasan.online/large_model_visualization.html)]   
+
+Topic 1 Words:   
+
+\begin{center}
+0.033*market + 0.014*slide + 0.012*performance + 0.011*costs + 0.011*prices +   
+
+0.009*ebitda + 0.008*indiscernible + 0.008*increased + 0.007*negative + 0.007*volumes  
+\end{center}     
+
+
+
+On the other hand, when we examine Topic 1 within the unseen data, spanning from July to September 2023, it encompasses a distinctly different set of terms. Words like "cancer," "program," "disease," "studies," "therapy," and "vaccine" stand out, indicating a significant shift in the focus of the discussions. This variation suggests that the conversations in the more recent earnings calls could have pivoted towards healthcare-related themes. Understanding this shift is crucial, as it may reflect changes in company priorities, industry trends, or global health events that have become more pressing or relevant in that period.
+
+Unseen Data^[(see Appendix C for full Top 10 topics. Or [\textcolor{red}{visit here}](https://bbaasan.online/lda_midsize_visualization.html) }]  
+
+Topic 1 Words:   
+
+
+\begin{center}
+0.015*cancer + 0.010*program + 0.010*disease + 0.009*studies + 0.008*therapy +  
+
+0.007*programs +0.007*vaccine + 0.006*financial + 0.006*efficacy + 0.006*research 
+\end{center}   
+
+
+
+Thus, the analysis of our datasets reveals the intricate tapestry of industry-specific dialogues captured through earnings call transcripts. The diversity of terms associated with Topic 1 uniquely underscores thematic elements inherent to different sectors. Notably, the emergence of specialized terms in the unseen data highlights evolving industry dialogues, particularly within the healthcare sector. These insights demonstrate the proficiency of our model in navigating the complex lexicon of corporate communications and underscore the significance of contextual nuances in understanding the multifaceted nature of earnings calls. Such sector-specific linguistic patterns offer a window into the evolving priorities and strategic focuses across the corporate spectrum.   
+    
+*Classifier performances* 
+
+The following figure displays the performance of various classification models that were used to predict stock price movements using features derived from earnings call data. It outlines the precision, recall, and F1 score for each model, which are crucial indicators of accuracy under default settings of the classifiers, without any hyperparameter tuning. The F1 score serves as a balanced measure of model accuracy, as it is the harmonic mean of precision and recall, with its most favorable score at 1 and least at 0, thereby reflecting a balance between precision and recall in the assessment.
+
+```{r algoPerformance, warning=FALSE, echo=FALSE,out.width="50%", fig.align="center", fig.cap="Gradient Boosting and Random Forest are two top performing classifiers on the main data set and able to predict 80+ in F1-Score. They followed by Multi-Layer Perceptron."}
+knitr::include_graphics("../docs/results/algo_performance2.png")
+```        
+
+```{r performanceOnTheUnseenData, warning=FALSE, echo=FALSE,out.width="50%", fig.align="center", fig.cap="Random Forest and Graident Boosting classifiers performance on the Unseen data. We notice that F1-score indicates that both classifiers dropped their scores in predicting price movements but less than 5 point scores."}
+knitr::include_graphics("../docs/results/performance_unseen2.png")
+```    
+
+*Feature Analysis*  
+    
+```{r featureAnalysis, warning=FALSE, echo=FALSE,out.width="50%", fig.align="center", fig.cap="Feature Analysis: Importance, Permutations Mean and Standard Deviation."}
+knitr::include_graphics("../docs/results/feature_importance_permutations2.png")
+```    
+The idea of feature importance^[https://scikit-learn.org/stable/auto_examples/ensemble/plot_forest_importances.html] (column 1, Fgiure 6.) comes from the notion of how useful or valuable each feature contributes to the construction of the decision tree within the model, in this case, Random Forest[@scikit-learn]. We expect higher the importance, the more influential the feature making the prediction. In Random Forests, for example, it is often computed from the average depth at which the feature splits data across trees. Given that the sentiment's importance score is between 3% to 4%, it suggests that while earnings call sentiment plays a role in price prediction, it's supplemental to the more dominant predictors like the daily close, 50DMA, and 200DMA. However, a 3-5% influence in a domain as complex as stock prediction is non-trivial. It might be the edge that sets this model apart, especially if the model is used in conjunction with other analyses. On the other hand, daily moving average of 200 business day is the highest among the features, suggesting that substantial significance in predicting the target. It's high importance indicates the 200 days average plays a pivotal role in the decision-making process of the model.  
+
+Feature permutation mean and standard deviation show that when a feature randomized while holding others constant, model's performance drop in average and consistency of the drop performance across different permutations, in this case, 30 different runs. For example, permutation mean and standard deviation of daily moving average of 50 days are 0.31 and 0.0031. It can be interpreted as when 50 days moving average is permuted or randomized or shuffled, the model performance drops by an average of approximately 0.31, signifying that the model is heavily relied on the feature to make accurate predictions. Therefore, standard deviation value represents that the decline in performance is consistent and not to due to random chance.  
+
+One of the interesting observation is positive sign of mean value of the Loughran - McDonald sentiment Negative score in  (Feature Analysis[LM_Negative, FeaturePermutaionMean] in Figure 5). As the sign indicates that the permutation of the feature is the only feature other than technical indicators follows the direction the model expected during the feature permutation run. On the other hand, the negative sign is indication of model performance improvement when other features are holding constant. However, the way to see is that is not so much improving, specially when we are comparing the performance null, which is un-randomized or have done no changes to the features. It is because during the permutation, we are expecting the performance to drop, since we are altering the original information and the model is no longer has access to the correct information from that feature. When the performance improves, we raise some suspicion that the feature might be noisy and misleading. It  might mean that in its original form the feature was adding some noise, making the model over-fitting to some noise or patterns in that particular feature. When it was randomized, model is effectively avoiding the over-fitting leading to better performance. However, in this case, range between 0.000 and 0.005 may not be as significant. Thus, some considerations are understanding the complexity of the text and domain specific knowledge.  
+
+It is noteworthy that the model's performance tends to decline when both the features: volume and market sentiment, move in tandem. This trend could potentially be attributed to the linkage between market sentiment and trading volume, as indicated by studies like [@so2015relationship]. The trading volume in the stock market, driven by specific company news, economic declarations, or overarching market updates, often swells as investors adjust to fresh insights. The magnitude of resultant price fluctuations, however, hinges on the overall effect of this news and the extent to which it was previously factored into prices. Contrarily, volume simply quantifies the shares exchanged within a given period, and the price depicts the worth at which these dealings transpire. Hence, consistent trading at a stable price can bolster volume without necessarily altering price volatility.   
+
+
+# Discussion   
+
+The findings outlined above align with the conclusions of other studies, such as those by [@jayaraman2020can], [@ZhangChuancai2021ECCa], [@grafe2011topic]. Furthermore, there are significant discussions that future research should consider, which include the following points.  
+
+
+*Fixed Vocabulary and Topic Consistency*  
+
+In the domain of topic modeling, ensuring consistent topic extraction across multiple documents is paramount. One approach that promises greater consistency is the utilization of a fixed vocabulary. Ideally, this vocabulary is derived from a combination of training datasets or, in some cases, curated from external sources[@loughran2011liability]. The benefit of such an approach is that it ensures a consistent set of terms for the topic modeling process, irrespective of the specific data run. However, while this strategy stabilizes the term set, it introduces another layer of complexity: the determination of an optimal number of topics between data sets. Determining the right number is not straightforward and requires careful consideration to ensure that the underlying themes within the data are adequately captured(See Appendix B: Explained Variance vs. Max Features). A method attempted for this purpose involved examining the explained variance as a function of the number of features. This approach, although promising, requires further scrutiny and validation to ascertain its efficiency in capturing the overarching themes of the data.  
+
+Contrarily, relying on static, predetermined topics can sometimes mean overlooking the evolving and dynamic nature of data. Especially in rapidly changing fields such as company news and market sentiment on a specific company, where the ebb and flow of events, opinions, and revelations continually reshape the discourse. In these arenas, what was relevant yesterday might not hold the same weight today. For instance, a breakthrough product announcement or an unexpected financial setback can drastically alter the narrative around a company. If we remain tethered to a fixed set of topics, we risk missing out on capturing these pivotal moments, thus rendering our analyses less accurate or even obsolete. Moreover, as the volume of documents increases over time(see Figure 8, Appendix 7.0.1: Earning Call aggregated monthly), the limitations of fixed topics become even more pronounced (see Figure 9, and 10, Appendix B. Feature Selection). They may fail to capture the new nuances introduced by the sheer influx of data, and the evolving themes that emerge with time. A fixed topic model, though consistent, may struggle to stay relevant, demanding constant re-evaluation to ensure its alignment with the present state of affairs.  
+
+*Look-ahead Bias*  
+
+In time series analysis and related domains, particularly finance, the concept of "look-ahead bias" is paramount to the integrity of modeling and predictions. Look-ahead bias is introduced when a model inadvertently incorporates information that originates from future data points, thereby skewing its predictive capabilities. The implications of this bias are multifaceted. Firstly, it compromises the analysis's validity, as using future data in retrospective predictions artificially inflates a model's perceived effectiveness. This often manifests as overfitting, where a model seemingly performs exceptionally on training data, given its access to future insights, but displays poor generalization to new, unseen data. Furthermore, the results derived from a model tainted with look-ahead bias can be deceptively precise, leading to unwarranted confidence in its forecasts. Such misleading precision can catalyze strategic and financial miscalculations when applied to real-world scenarios. To mitigate this bias, analysts must exercise rigorous data management, ensuring models are isolated from future data during training and validation. Techniques like rolling forecasting and time-series cross-validation can be instrumental in preserving the temporal sanctity of data, thereby safeguarding models from the perils of look-ahead bias. In essence, ensuring the absence of look-ahead bias is not just a methodological obligation, but a cornerstone of ethical and accurate predictive modeling.  
+
+*Feature Engineering Bias*   
+
+One of the challenges emphasized is inherently tied to the specific characteristics of the data. We turned to topic modeling techniques, specifically to extract discernible topics from the vast textual data. However, a distinct complication can arise once this data undergoes processing: merging the X_train and X_val datasets becomes an impractical endeavor. The core of this issue lies in the dynamics of topic modeling. The contribution of individual terms to the broader topics is not merely a matter of their presence but is intrinsically linked to the overall volume of the text being analyzed. When contemplating entirely separate, unseen data, the true challenge emerges: ensuring that topics identified from the training phase resonate consistently. It's crucial to understand that this unseen data has been processed independently, with its topic modeling outcomes being entirely isolated from the main dataset. This scenario accentuates the importance of a topic modeling approach that's both robust and broadly applicable. It is not enough for the model to be finely tuned to the nuances of the training data; it should ideally be designed to generalize effectively across different textual landscapes. The consistency in the model's performance on new unseen data, particularly the balance between recall and precision, aligns with the trends we identified during its tuning on the training and validation sets. We believe this consistency is encouraging. It hints at the model's ability to generalize effectively, even in the face of the unique time series intricacies in the training and validation datasets. More optimistically, the minimal impact of these time series quirks on the model's performance with the new data underscores its resilience. This suggests that the model is not merely mimicking specific patterns from the training set but is genuinely discerning the foundational trends crucial for accurate predictions. In the realm of time series data, a model's capability to accurately predict future observations is paramount. The consistent performance of the model across familiar and unfamiliar data indicates its adeptness at identifying the core characteristics of the data, sidestepping potential pitfalls associated with time-bound peculiarities.  
+
+# Limitations  
+
+This study encounters several significant limitations, particularly in the application of topic modeling to longitudinal analyses and the use of the random forest classifier for time-series data. Echoing the challenges highlighted by [@HaoLei2021RPTM], our research grapples with issues such as high-frequency words skewing the prominence of topics and estimated topics sharing common vocabulary, leading to semantic overlap. Additionally, our probabilistic topic modeling approach, which allows for a document to contain any number of topics up to the total identified in the corpus, may not accurately mirror the true distribution. The LDA results tend to be uniform and overlapping, a point also made by [@EggerRoman2022Ihss], with the distribution often exhibiting long tails. Furthermore, sentiment analysis within the nuanced context of earnings calls is fraught with difficulties. The deliberate wording chosen by executives can lead to potential misinterpretations of sentiment, influencing its inferred importance in our model.  
+
+
+\newpage
+# Conclusion
+
+In conclusion, while natural language processing (NLP) shows potential for predicting stock market trends for various companies, it can also unintentionally introduce noise that compromises the model's ability to generalize. Our study contributes to the field by introducing the Hybrid Market Movement (HMM) predictor model, a novel approach that integrates technical analysis with insights gleaned from topic modeling and sentiment analysis of earnings call transcripts. The model demonstrates strong performance, with F1-scores surpassing 80 percent across training and testing datasets, and maintaining this level of accuracy with new, unseen data. Additionally, our research delves into the relationship and influence of different features on the model's predictions, using Random Forest to assess feature importance and permutation testing to validate these findings.  
+
+Looking ahead, the potential enhancements to our approach are promising, particularly with the integration of rolling window techniques in topic modeling. By implementing a rolling window analysis, future iterations of the Hybrid Market Movement (HMM) model could capture temporal shifts in market sentiment and topic relevance more accurately, reflecting the evolving nature of financial discourse over time. This would allow the model to dynamically adjust to recent trends, providing a more nuanced and timely prediction of stock market movements. The incorporation of such temporal methodologies stands to further refine the predictive accuracy of NLP applications in financial analysis, marking a significant stride forward for real-time market analytics.  
+
+
+\newpage  
+# Appendix  
+
+### **Appendix A**: Earnings call count between 2011 and 2023 (main data)
+
+```{r earnings_overyears, fig.align="center",out.width="75%", fig.cap="Earning Call aggregated monthly"}
+
+knitr::include_graphics('../docs/images/earnings_over_years.png')
+```
+
+
+### **Appendix B**: Feature Selection - Explained Variances vs. Max Features  
+
+Using explained variance function as a criterion for selecting the appropriate number of max features is helpful for classifiers to work effectively. In general,explained variance measures the proportion of target variable variance that is 'explained' by the features used in the model. The max features is a parameter controls number of features to consider when looking for the best split at each tree node. More documentation are available at [scikit-learn](https://scikit-learn.org/stable/modules/model_evaluation.html#explained-variance-score).  
+The graphs show that our features and explain variability in our target model. The inverse relations of following two graphs tell us as increase of the max features is not significantly improving the model. Therefore, as it converges to the mean of the dependent variable, the features become less capable of capturing the variations. Thus, additional features contribute little to explained variance and therefore the model might be struggling to use given features for accurate predictions.  
+
+```{r explainedVar1, warning=FALSE, echo=FALSE,out.width="50%", fig.align="center", fig.cap="Explained Varience vs. Max Number of Features, Preliminiary data set 1: During the initial period doing an analysis on smaller datasetit was helpful. This dataset comprises of first 5000 rows of documents of the the main dataset. The inverse relation between variables shows first 2000 features explains most variations in the documents and quickly fade away after, showing it would be reasonable to choose max features somewhere between 1700 and 2000."}
+knitr::include_graphics("../docs/images/explained_var_num_of_max_features.png")
+```
+
+```{r explainedVar2, warning=FALSE, echo=FALSE,out.width="40%", fig.align="center", fig.cap="Explained Varience vs. Max Number of Features, Main data: As we were adding more features to the bigger dataset from earnings calls, we noticed a proportional rise in explained variance. However, the new features seemed to add little substantive information, indicating that the addition could be noise. When features are derived from data that is noisy or irrelevant, they might create the illusion of enhancing the model by artificially inflating the explained variance. This leads to a situation where each new feature appears crucial, but in reality, may not be. With an increasing number of features, the model risks adjusting to this noise, focusing on peculiarities in the training data, which can result in overfitting. This becomes particularly concerning when the increase in explained variance fails to correspond to improved predictive accuracy on new, unseen data. The objective is to develop a model that captures the true variance in the current dataset and maintains accuracy and consistency when applied to new data."}
+knitr::include_graphics("../docs/images/ExplainedVar_NumFeatures.png")
+```
+
+
+### **Appendix C**: Topics Modeling Main dataset  
+```{r child='top10_main.Rmd'}
+```  
+
+### **Appendix D**: Topics Modeling Unseen dataset   
+```{r child='top10_unseen.Rmd'}
+```
+
+
+### **Appendix E**: Feature Selection: Topics Modeling  - Coherence and Perplexity Scores  
+
+```{r coherence_perplexity, warning=FALSE, echo=FALSE,out.width="80%", fig.align="center", fig.cap="Coherence and Perplexity vs. Number of Topics"}
+knitr::include_graphics("../docs/results/assets/coherenceScores_preplexity_numTopics.png")
+```
+
+- Coherence  
+It measures the degree of semantic similarity between high scoring words within each topic, which is intended to reflect how interpretable and meaningful topics are to humans. In general corresponds to topics that are more understandable and 
+coherent to human readers. It evaluates the quality of the topics generated by considering the pairwise similarity between words within a topic. Though can vary based on the metric used (e.g., UMass, C_v), but generally, higher values 
+indicate more coherent and interpretable topics.
+
+- Perplexity  
+It is a statistical measure of how well a probability model predicts a sample, and in the context of topic models, it evaluates how well the model describes the distribution of words across documents.Lower perplexity indicates that the 
+probability distribution of the model is closer to the true distribution of words in the documents. It's often used as an indicator of how well the model will generalize to unseen data. Lower values suggest better generalization. While it's a common metric, perplexity doesn’t always correlate with human judgment of topic quality and interpretability. It also tends to favor models with more topics.  
+
+ 
+### **Appendix F**: Cosine Similarity  
+
+The cosine_similarity function in scikit-learn package computes the similarity between two vectors( or documents), and returns a NumPy array of floating-point values. It is a measure of the cosine of the angle between two vectors in a high dimensional space. When the angle between two vectors is small (close to 0 degrees), their cosine similarity score will be 
+close to 1, indicating a high degree of similarity and vice verso. 
+
+
+```{r cosine_similarity, fig.align="center",out.width="70%", fig.cap="Cosine Similarity Analysis, First 5000 Documents"}
+
+knitr::include_graphics('../docs/images/cosine_similarity_analysis.png')
+```
+
+ 
+### **Appendix H**: Stopwords from the Earning Call  
+```{r child='stops.rmd'}
+```  
+
+
+
+\newpage  
+
+# References
+  
